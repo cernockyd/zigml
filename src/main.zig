@@ -4,10 +4,8 @@ const print = std.debug.print;
 const DataFrame = @import("dataframe.zig").DataFrame;
 const Sequential = @import("sequential.zig").Sequential;
 const Data = @import("dataframe.zig").Data;
-const visualize = @import("visualize.zig");
 
 pub fn main() !void {
-    // try visualize.gradientToImg(null);
     var timer = try std.time.Timer.start();
     const start = timer.lap();
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

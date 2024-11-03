@@ -331,11 +331,11 @@ pub const Sequential = struct {
         const labels_one_hot = try train_data.labels_df.one_hot(10);
         defer labels_one_hot.deinit();
 
-        const cost_log = try Log.init("./src/control/data-cost.txt");
+        const cost_log = try Log.init("./control/data-cost.txt");
         defer cost_log.deinit();
-        const train_accuracy_log = try Log.init("./src/control/data-train-accuracy.txt");
+        const train_accuracy_log = try Log.init("./control/data-train-accuracy.txt");
         defer train_accuracy_log.deinit();
-        const test_accuracy_log = try Log.init("./src/control/data-test-accuracy.txt");
+        const test_accuracy_log = try Log.init("./control/data-test-accuracy.txt");
         defer test_accuracy_log.deinit();
 
         var batch_iter = BatchIterator{
