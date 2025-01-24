@@ -38,16 +38,22 @@ pub fn main() !void {
     print("\nNormalized\n", .{});
     values_df.normalize(data_min, data_max);
     values_df.head(5);
+    // add bias column so there will be values_df.shape.n + 1 columns, weights will adjust
+    print("\nAdded bias\n", .{});
+    try values_df.add_bias_col();
+    values_df.info();
+    values_df.head(5);
 
     const mnist_test_df = try DataFrame.load_csv("./data/mnist_test.csv", allocator);
     defer mnist_test_df.deinit();
     var labels_test_df = try mnist_test_df.slice(1, 0);
     defer labels_test_df.deinit();
     var values_test_df = try mnist_test_df.slice(mnist_test_df.shape.n, 1);
+    try values_test_df.add_bias_col();
     defer values_test_df.deinit();
 
-    const hidden_1 = 500;
-    const hidden_2 = 50;
+    const hidden_1 = 256;
+    const hidden_2 = 128;
     const output = 10;
     const theta_1 = try DataFrame.rand(allocator, values_df.shape.n, hidden_1);
     print("\nTheta 1\n", .{});
@@ -60,17 +66,15 @@ pub fn main() !void {
     print("\nTheta 3\n", .{});
     theta_3.info();
 
-    // print("\nPrediction batch \n----\n", .{});
-    // const predictions = try Sequential.predict(allocator, &values_df, &theta_1, &theta_2, &theta_3);
-    // _ = predictions;
-    // _ = try Sequential.cost(labels_df, predictions);
     const model = Sequential{ .theta_1 = theta_1, .theta_2 = theta_2, .theta_3 = theta_3 };
     defer model.deinit();
     const train_data = Data{ .labels_df = labels_df, .values_df = values_df };
     defer train_data.deinit();
     const test_data = Data{ .labels_df = labels_test_df, .values_df = values_test_df };
     defer test_data.deinit();
+
     try model.train(allocator, train_data, test_data);
+
     //try Sequential.test(allocator, values_df, labels_df, theta_1, theta_2, theta_3);
     // const hidden_input_1 = try values_df.dot(theta_1);
     // hidden_input_1.info();

@@ -348,9 +348,9 @@ pub const Sequential = struct {
         };
 
         for (0..epochs) |epoch| {
-            // model.var batch_count: u32 = 0;
+            const batch_count = @as(f32, @floatFromInt(train_data.values_df.shape.m)) / @as(f32, @floatFromInt(batch_iter.batch_size));
             while (batch_iter.next()) |batch| {
-                const percentage = (@as(f32, @floatFromInt(batch_iter.index)) / @as(f32, @floatFromInt(train_data.values_df.shape.m))) * 100.0;
+                const percentage = (@as(f32, @floatFromInt(batch_iter.index)) / batch_count) * 100.0;
                 print("Epoch #{} ... progress [{d:.1} %]\r", .{ epoch, percentage });
                 // batch.labels_df.info();
                 // batch.values_df.info();

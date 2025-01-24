@@ -460,6 +460,32 @@ pub const DataFrame = struct {
         }
     }
 
+    pub fn add_bias_col(self: *DataFrame) !void {
+        if (self.data) |*old_data| {
+            const n = self.shape.n + 1;
+            const len = self.shape.m * n;
+            const data = try self.allocator.alloc(f32, len);
+            errdefer self.allocator.free(data);
+
+            var oi: usize = 0;
+            var ni: usize = 0;
+            while (ni <= len) : (ni += 1) {
+                // set every n-th element is 1.0
+                if (ni % n == 0) {
+                    data[ni] = 1.0;
+                } else {
+                    data[ni] = old_data.*[oi];
+                    oi += 1;
+                }
+            }
+            self.allocator.free(old_data.*);
+            self.data = data;
+            self.shape.n += 1;
+            return;
+        }
+        return DataFrameError.NullData;
+    }
+
     pub fn transpose(self: DataFrame) !DataFrame {
         if (self.data == null) {
             return DataFrameError.NullData;
