@@ -536,6 +536,53 @@ pub const DataFrame = struct {
         }
     }
 
+    pub fn histogram(self: DataFrame, n: u8) !void {
+        if (self.data) |data| {
+            var min: f32 = data[0];
+            var max: f32 = data[0];
+            for (data) |val| {
+                if (val < min) {
+                    min = val;
+                } else if (val > max) {
+                    max = val;
+                }
+            }
+            const HistogramBin = struct { count: usize, max: f32 };
+
+            const range: f32 = max - min;
+            const interval: f32 = @as(f32, range / @as(f32, @floatFromInt(n)));
+            const hist = try self.allocator.alloc(HistogramBin, n);
+            defer self.allocator.free(hist);
+            // create bins
+            for (hist, 0..) |_, bin_i| {
+                const bin_max: f32 = if (bin_i == n - 1) max else min + (interval * (@as(f32, @floatFromInt(bin_i))));
+                hist[bin_i] = HistogramBin{
+                    .count = 0,
+                    .max = bin_max,
+                };
+            }
+            // count values in bins
+            for (data) |val| {
+                for (hist) |*bin| {
+                    if (val <= bin.max) {
+                        bin.count += 1;
+                        break;
+                    }
+                }
+            }
+            // print histogram
+            print("Histogram\n", .{});
+            for (hist, 0..) |bin, bin_i| {
+                if (bin_i == 0) {
+                    print("{d:.3} - {d:.3}: {d}\n", .{ min, bin.max, bin.count });
+                } else {
+                    const prev_bin = hist[bin_i - 1];
+                    print("{d:.3} - {d:.3}: {d}\n", .{ prev_bin.max, bin.max, bin.count });
+                }
+            }
+        }
+    }
+
     pub fn one_hot(self: DataFrame, len: u32) !DataFrame {
         if (self.data == null) {
             return DataFrameError.NullData;
