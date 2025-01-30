@@ -487,8 +487,8 @@ pub const DataFrame = struct {
 
             var oi: usize = 0;
             var ni: usize = 0;
-            while (ni <= len) : (ni += 1) {
-                // set every n-th element is 1.0
+            // set every n-th element to 1.0 otherwise copy from old_data
+            while (ni < len) : (ni += 1) {
                 if (ni % n == 0) {
                     data[ni] = 1.0;
                 } else {
