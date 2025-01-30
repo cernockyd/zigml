@@ -390,6 +390,23 @@ pub const DataFrame = struct {
         }
     }
 
+    // element-wise relu
+    pub fn relu(self: DataFrame) void {
+        if (self.data) |data| {
+            for (data, 0..) |val, index| {
+                data[index] = if (val > 0.0) val else 0;
+            }
+        }
+    }
+
+    pub fn relu_derivative(self: DataFrame) void {
+        if (self.data) |data| {
+            for (data, 0..) |val, index| {
+                data[index] = if (val > 0.0) 1.0 else 0;
+            }
+        }
+    }
+
     // vector-wise softmax (row-wise)
     pub fn softmax(self: DataFrame) void {
         var i: u32 = 0;
