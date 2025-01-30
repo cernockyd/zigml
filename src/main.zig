@@ -17,7 +17,7 @@ pub fn main() !void {
 
     // load training data data
     print("\n\nLoad data\n---------\n", .{});
-    const mnist_df = try DataFrame.load_csv("./data/mnist_train.csv", allocator);
+    const mnist_df = try DataFrame.load_csv("./data/mnist_train.csv", allocator, null);
     print("\nBefore Shuffle\n", .{});
     mnist_df.head(5);
     try mnist_df.shuffle_rows();
@@ -44,7 +44,7 @@ pub fn main() !void {
     values_df.info();
     values_df.head(5);
 
-    const mnist_test_df = try DataFrame.load_csv("./data/mnist_test.csv", allocator);
+    const mnist_test_df = try DataFrame.load_csv("./data/mnist_test.csv", allocator, null);
     defer mnist_test_df.deinit();
     var labels_test_df = try mnist_test_df.slice(1, 0);
     defer labels_test_df.deinit();

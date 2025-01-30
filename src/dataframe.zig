@@ -237,7 +237,7 @@ pub const DataFrame = struct {
     }
 
     // This function could be faster if read byte by byte and parse the number
-    pub fn load_csv(path: []const u8, allocator: Allocator) !DataFrame {
+    pub fn load_csv(path: []const u8, allocator: Allocator, cap: ?u32) !DataFrame {
         std.log.info("Loading CSV file: {s}", .{path});
 
         const file: std.fs.File = try std.fs.cwd().openFile(path, .{});
@@ -267,7 +267,7 @@ pub const DataFrame = struct {
 
         // get number of rows and fill data
         while (lines.next()) |line| {
-            if (line.len == 0) {
+            if (line.len == 0 or m == cap) {
                 break;
             }
             m += 1;
@@ -328,7 +328,8 @@ pub const DataFrame = struct {
         const new_data = try self.allocator.alloc(f32, self.shape.m * new_n);
         errdefer self.allocator.free(new_data);
 
-        if (column_start_index >= end or end >= self.shape.m) {
+        if (column_start_index >= end or end > self.shape.n) {
+            print("column_start_index {d}; end {d}, self.shape.m = {d}\n", .{ column_start_index, end, self.shape.m });
             return DataFrameError.IndexOutOfBounds;
         }
 
