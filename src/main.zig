@@ -49,6 +49,7 @@ pub fn main() !void {
     var labels_test_df = try mnist_test_df.slice(1, 0);
     defer labels_test_df.deinit();
     var values_test_df = try mnist_test_df.slice(mnist_test_df.shape.n, 1);
+    values_test_df.normalize(data_min, data_max);
     try values_test_df.add_bias_col();
     defer values_test_df.deinit();
 

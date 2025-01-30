@@ -64,7 +64,7 @@ pub const DataFrame = struct {
         var i: usize = 0;
         while (i < m * n) : (i += 1) {
             // https://ziglang.org/documentation/master/std/#std.Random.floatNorm
-            data[i] = rnd.floatNorm(f32) * 0.2;
+            data[i] = rnd.floatNorm(f32) * 0.1;
         }
         return DataFrame{ .shape = Shape{ .m = m, .n = n }, .allocator = allocator, .data = data };
     }
