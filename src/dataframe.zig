@@ -11,6 +11,10 @@ pub const Data = struct {
         self.labels_df.deinit();
         self.values_df.deinit();
     }
+
+    pub fn shuffle(self: Data) !void {
+        try DataFrame.shuffle_tuple(self.values_df, self.labels_df);
+    }
 };
 
 const DEBUG = false;
@@ -92,6 +96,54 @@ pub const DataFrame = struct {
                     @memcpy(tmp, data[j_start..j_end]);
                     @memcpy(data[j_start..j_end], data[i_start..i_end]);
                     @memcpy(data[i_start..i_end], tmp);
+                }
+            }
+            return;
+        }
+        return DataFrameError.NullData;
+    }
+
+    pub fn shuffle_tuple(df_a: DataFrame, df_b: DataFrame) !void {
+        if (df_a.shape.m != df_b.shape.m) {
+            return DataFrameError.ShapeMismatch;
+        }
+        if (df_a.data != null and df_b.data != null) {
+            var prng = std.rand.DefaultPrng.init(blk: {
+                var seed: u64 = undefined;
+                try std.posix.getrandom(std.mem.asBytes(&seed));
+                break :blk seed;
+            });
+            const rnd = prng.random();
+            var j: usize = undefined;
+
+            const tmp_a: []f32 = try df_a.allocator.alloc(f32, df_a.shape.n);
+            defer df_a.allocator.free(tmp_a);
+
+            const tmp_b: []f32 = try df_b.allocator.alloc(f32, df_b.shape.n);
+            defer df_b.allocator.free(tmp_b);
+
+            var i: usize = 0;
+            while (i < df_a.shape.m) : (i += 1) {
+                j = rnd.intRangeAtMost(usize, 0, i);
+                if (i != j) {
+                    // df_a indexes
+                    const j_start_a = (j * df_a.shape.n);
+                    const j_end_a = (j + 1) * df_a.shape.n;
+                    const i_start_a = (i * df_a.shape.n);
+                    const i_end_a = (i + 1) * df_a.shape.n;
+                    // df_b indexes
+                    const j_start_b = (j * df_b.shape.n);
+                    const j_end_b = (j + 1) * df_b.shape.n;
+                    const i_start_b = (i * df_b.shape.n);
+                    const i_end_b = (i + 1) * df_b.shape.n;
+                    // swap df_a
+                    @memcpy(tmp_a, df_a.data.?[j_start_a..j_end_a]);
+                    @memcpy(df_a.data.?[j_start_a..j_end_a], df_a.data.?[i_start_a..i_end_a]);
+                    @memcpy(df_a.data.?[i_start_a..i_end_a], tmp_a);
+                    // swap df_b
+                    @memcpy(tmp_b, df_b.data.?[j_start_b..j_end_b]);
+                    @memcpy(df_b.data.?[j_start_b..j_end_b], df_b.data.?[i_start_b..i_end_b]);
+                    @memcpy(df_b.data.?[i_start_b..i_end_b], tmp_b);
                 }
             }
             return;

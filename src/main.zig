@@ -18,12 +18,6 @@ pub fn main() !void {
     // load training data data
     print("\n\nLoad data\n---------\n", .{});
     const mnist_df = try DataFrame.load_csv("./data/mnist_train.csv", allocator, null);
-    print("\nBefore Shuffle\n", .{});
-    mnist_df.head(5);
-    try mnist_df.shuffle_rows();
-    print("\nAfter Shuffle\n", .{});
-    mnist_df.head(5);
-    print("\nFull\n", .{});
     mnist_df.info();
     mnist_df.head(5);
     print("\nLabels\n", .{});

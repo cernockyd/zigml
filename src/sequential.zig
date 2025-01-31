@@ -348,20 +348,7 @@ pub const Sequential = struct {
         };
 
         for (0..epochs) |epoch| {
-            const batch_count = @as(f32, @floatFromInt(train_data.values_df.shape.m)) / @as(f32, @floatFromInt(batch_iter.batch_size));
-            while (batch_iter.next()) |batch| {
-                const percentage = (@as(f32, @floatFromInt(batch_iter.index)) / batch_count) * 100.0;
-                print("Epoch #{} ... progress [{d:.1} %]\r", .{ epoch, percentage });
-                // batch.labels_df.info();
-                // batch.values_df.info();
-                const prediction = try model.predict(batch.values_df);
-                defer prediction.deinit();
-                const gradient = try model.backprop(prediction, batch.labels_df);
-                defer gradient.deinit();
-
-                try model.update(gradient, epoch);
-            }
-            batch_iter.index = 0;
+            // train accuracy
             const prediction = try model.predict(train_data.values_df);
             defer prediction.deinit();
             const model_metrics = try Sequential.metrics(train_data.labels_df, prediction.output); // should be about -+ -log(1/10)
@@ -395,6 +382,24 @@ pub const Sequential = struct {
             );
             try test_accuracy_log.write(test_accuracy_line);
             defer allocator.free(test_accuracy_line);
+
+            // begin training
+            const batch_count = @as(f32, @floatFromInt(train_data.values_df.shape.m)) / @as(f32, @floatFromInt(batch_iter.batch_size));
+            // try train_data.shuffle();
+            while (batch_iter.next()) |batch| {
+                const percentage = (@as(f32, @floatFromInt(batch_iter.index)) / batch_count) * 100.0;
+                print("Epoch #{} ... progress [{d:.1} %]\r", .{ epoch, percentage });
+                // batch.labels_df.info();
+                // batch.values_df.info();
+                const pred = try model.predict(batch.values_df);
+                defer pred.deinit();
+                const gradient = try model.backprop(pred, batch.labels_df);
+                try gradient.preview();
+                defer gradient.deinit();
+
+                try model.update(gradient, epoch);
+            }
+            batch_iter.index = 0;
         }
     }
 };
