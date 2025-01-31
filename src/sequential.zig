@@ -95,10 +95,10 @@ pub const Sequential = struct {
         const a_1 = try values_df.copy();
         const z_2 = try values_df.dot(self.theta_1);
         const a_2 = try z_2.copy();
-        a_2.sigmoid();
+        a_2.relu();
         const z_3 = try a_2.dot(self.theta_2);
         const a_3 = try z_3.copy();
-        a_3.sigmoid();
+        a_3.relu();
         const z_4 = try a_3.dot(self.theta_3);
         const output = try z_4.copy();
         output.softmax();
@@ -147,7 +147,9 @@ pub const Sequential = struct {
             print("\n\nBegin Backprop\n--------------\n", .{});
         }
         // compute error of layers
-        //
+        // (how a affects the cost)
+        //                      reverse_a_l
+        //                      ↓
         // a_err_3 = theta_3 * (g'(z_3) .* (output - y))
         // a_err_2 = theta_2 * (g'(z_2) .* a_err_3)
         // a_err_1 = theta_1 * (g'(z_1) .* a_err_2)
@@ -177,7 +179,7 @@ pub const Sequential = struct {
             z_4_der.head(100);
         }
         defer z_4_der.deinit();
-        z_4_der.sigmoid_derivative();
+        z_4_der.relu_derivative();
         if (DEBUG) {
             print("\nz_4 derivative\n", .{});
             z_4_der.info();
@@ -209,7 +211,7 @@ pub const Sequential = struct {
 
         const z_3_der = try prediction.z_3.copy();
         defer z_3_der.deinit();
-        z_3_der.sigmoid_derivative();
+        z_3_der.relu_derivative();
         const reverse_a_2 = try z_3_der.copy();
         defer reverse_a_2.deinit();
         try reverse_a_2.mul(a_err_3);
@@ -223,26 +225,24 @@ pub const Sequential = struct {
             a_err_2.info();
         }
 
-        const z_2_der = try prediction.z_2.copy();
-        defer z_2_der.deinit();
-        z_2_der.sigmoid_derivative();
-        const reverse_a_1 = try z_2_der.copy();
-        defer reverse_a_1.deinit();
-        try reverse_a_1.mul(a_err_2);
-        const theta_1_t = try self.theta_1.transpose();
-        defer theta_1_t.deinit();
+        // const z_2_der = try prediction.z_2.copy();
+        // defer z_2_der.deinit();
+        // z_2_der.relu_derivative();
+        // const reverse_a_1 = try z_2_der.copy();
+        // defer reverse_a_1.deinit();
+        // try reverse_a_1.mul(a_err_2);
+        // const theta_1_t = try self.theta_1.transpose();
+        // defer theta_1_t.deinit();
 
-        const a_err_1 = try reverse_a_1.dot(theta_1_t);
-        defer a_err_1.deinit();
-        if (DEBUG) {
-            print("\na_err_1\n", .{});
-            a_err_1.info();
-        }
+        // const a_err_1 = try reverse_a_1.dot(theta_1_t);
+        // defer a_err_1.deinit();
+        // if (DEBUG) {
+        //     print("\na_err_1\n", .{});
+        //     a_err_1.info();
+        // }
 
         // compute gradients
         // grad_(l) = a_(l) * a_err_(l+1)
-
-        const m = @as(f32, @floatFromInt(prediction.a_1.shape.m));
 
         const a_err_4_t = try a_err_4.transpose();
         defer a_err_4_t.deinit();
@@ -252,17 +252,17 @@ pub const Sequential = struct {
             grad_3.info();
             grad_3.head(40);
         }
-        for (grad_3.data.?, 0..) |g, i| {
-            grad_3.data.?[i] = g / m;
-        }
+        // for (grad_3.data.?, 0..) |g, i| {
+        //     grad_3.data.?[i] = g; // / @as(f32, @floatFromInt(prediction.a_3.shape.m));
+        // }
 
         const a_err_3_t = try a_err_3.transpose();
         defer a_err_3_t.deinit();
 
         const grad_2 = try a_err_3_t.dot(prediction.a_2);
-        for (grad_2.data.?, 0..) |g, i| {
-            grad_2.data.?[i] = g / m;
-        }
+        // for (grad_2.data.?, 0..) |g, i| {
+        //     grad_2.data.?[i] = g; // / @as(f32, @floatFromInt(prediction.a_2.shape.m));
+        // }
 
         if (DEBUG) {
             print("\ngrad_2\n", .{});
@@ -273,47 +273,49 @@ pub const Sequential = struct {
         defer a_err_2_t.deinit();
 
         const grad_1 = try a_err_2_t.dot(prediction.a_1);
-        for (grad_1.data.?, 0..) |g, i| {
-            grad_1.data.?[i] = g / m;
-        }
+        // for (grad_1.data.?, 0..) |g, i| {
+        //     grad_1.data.?[i] = g / @as(f32, @floatFromInt(prediction.a_1.shape.m));
+        // }
 
         if (DEBUG) {
             print("\ngrad_1\n", .{});
             grad_1.info();
         }
 
-        try grad_1.clip();
-        try grad_2.clip();
-        try grad_3.clip();
+        // try grad_1.clip();
+        // try grad_2.clip();
+        // try grad_3.clip();
 
         return Gradient{ .grad_1 = grad_1, .grad_2 = grad_2, .grad_3 = grad_3 };
     }
 
     pub fn update(self: Sequential, gradient: Gradient, epoch: usize) !void {
-        _ = epoch;
         //  print("\n\nBegin Update\n--------------\n", .{});
-        const alpha: f32 = 0.01;
+        var alpha: f32 = 0.0008;
+        alpha = switch (epoch) {
+            0...2 => 0.005,
+            3...4 => 0.003,
+            5...7 => 0.002,
+            else => alpha,
+        };
+
         const grad_1 = try gradient.grad_1.transpose();
         defer grad_1.deinit();
         const grad_2 = try gradient.grad_2.transpose();
         defer grad_2.deinit();
         const grad_3 = try gradient.grad_3.transpose();
         defer grad_3.deinit();
-        // try grad_1.clip();
-        // try grad_2.clip();
-        // try grad_3.clip();
-        // grad_3.head(400);
 
-        for (grad_1.data.?, 0..) |g, i| {
-            grad_1.data.?[i] = g * alpha;
+        for (grad_1.data.?, 0..) |_, i| {
+            grad_1.data.?[i] *= alpha;
         }
 
-        for (grad_2.data.?, 0..) |g, i| {
-            grad_2.data.?[i] = g * alpha;
+        for (grad_2.data.?, 0..) |_, i| {
+            grad_2.data.?[i] *= alpha;
         }
 
-        for (grad_3.data.?, 0..) |g, i| {
-            grad_3.data.?[i] = g * alpha;
+        for (grad_3.data.?, 0..) |_, i| {
+            grad_3.data.?[i] *= alpha;
         }
 
         try self.theta_1.sub(grad_1);
@@ -323,7 +325,7 @@ pub const Sequential = struct {
 
     pub fn train(self: Sequential, allocator: Allocator, train_data: Data, test_data: Data) !void {
         print("\n\nBegin training\n--------------\n", .{});
-        const epochs: u32 = 300;
+        const epochs: u32 = 100;
         // compute cost
         // compute gradients using backpropagation
         // update weights
@@ -340,7 +342,7 @@ pub const Sequential = struct {
 
         var batch_iter = BatchIterator{
             .index = 0,
-            .batch_size = 10,
+            .batch_size = 1,
             .data = Data{
                 .values_df = train_data.values_df,
                 .labels_df = labels_one_hot,
@@ -350,6 +352,7 @@ pub const Sequential = struct {
         for (0..epochs) |epoch| {
             // train accuracy
             const prediction = try model.predict(train_data.values_df);
+            try prediction.preview();
             defer prediction.deinit();
             const model_metrics = try Sequential.metrics(train_data.labels_df, prediction.output); // should be about -+ -log(1/10)
             const cost_line = try std.fmt.allocPrint(
