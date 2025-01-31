@@ -11,9 +11,8 @@ curl -L -o data.zip https://www.kaggle.com/api/v1/datasets/download/oddrationale
 mkdir data && tar xf data.zip -C data
 ```
 
-```
-
 run
-```zig
+
+```bash
 zig build run -Doptimize=ReleaseFast
 ```
